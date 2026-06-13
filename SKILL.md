@@ -12,10 +12,10 @@ Renders the xterm-256 palette as color-relationship spectrums for designing term
 ## Usage
 
 ```bash
-python3 ~/.claude/skills/terminal-colors/terminal_color_spectrums.py [selectors] [--smart] [--width=N] [--page=N | --all]
+python3 ~/.claude/skills/terminal-colors/terminal_color_spectrums.py [selectors] [--smart] [--width=N] [--page=N]
 ```
 
-**Agent-aware output (automatic):** the script detects Claude Code (via `CLAUDECODE`/`AI_AGENT` env vars) and auto-paginates, so each run fits the inline display cap instead of tripping "Output too large." A render that fits prints whole; a big one prints page 1 and tells you to re-run with `--page=2` onward (or `--all` to force the full ~150KB dump). In a real terminal nothing changes. **Still prefer a selector**, since a single relationship fits one page with no paging needed.
+**Viewing the output:** a bare run prints the *whole* reference. In Claude Code the "Output too large" notice only limits what loads into the assistant's own context window — it does NOT stop June from seeing the full output: she expands the tool result (Ctrl-O) and sees every section in color. Do not tell her the colors "can't display in Claude Code"; they render fine. `--page=N` is strictly opt-in, for when the *agent* needs to pull one measured chunk into its own context. To show June a focused view, run a selector (`complementary`, `triadic`, `bands`) — that prints a small, complete, in-conversation render with no paging.
 
 Selectors (mix freely, space- or comma-separated): section numbers `1`–`9`, or names — `families`/`fam` (1), `analogous`/`ana` (2 + band rows), `rainbow` (3), `complementary`/`comp` (4 + band rows), `triadic`/`tri` (5 + band rows), `tetradic`/`tetra` (6 + band rows), `split`/`split-comp` (7 + band rows), `bands`/`ring` (8 full), `fullbands`/`full` (9 full). A relationship name pulls its family chart **and** its rows in both band sections — the whole concept, not one section. `--list` prints the table. Examples:
 

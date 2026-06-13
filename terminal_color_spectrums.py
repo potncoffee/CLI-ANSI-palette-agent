@@ -46,8 +46,7 @@ Pure-hue rainbow ring: start 196, walk strides +6,-36,+1,-6,+36,-1 (5 steps each
 Grays (excluded here): cube diagonal 16/59/102/145/188/231 + ramp 232-255
 
 Usage:
-  python3 terminal_color_spectrums.py [selectors] [--smart] [--width=N]
-                                      [--page=N | --all] [--budget=BYTES]
+  python3 terminal_color_spectrums.py [selectors] [--smart] [--width=N] [--page=N]
 
 No selectors renders everything. Selectors are section numbers (1-9) and/or
 names, combinable in any mix ("complementary triadic", "1 9", "rainbow comp"):
@@ -66,27 +65,23 @@ names, combinable in any mix ("complementary triadic", "1 9", "rainbow comp"):
 Flags:
   --smart      white tile text on dark colors (default: all black)
   --width=N    chunk bands to N columns (default: terminal width)
-  --page=N     print page N of the paginated output (agent mode; see below)
-  --all        force the entire render in one shot, even under an agent
-  --budget=N   per-page byte budget for agent mode (default 20000)
+  --page=N     print only chunk N of the output (opt-in; see below)
+  --budget=N   byte budget per --page chunk (default 20000)
 
-Agent / Claude Code display:
-  Coding agents (Claude Code and friends) cap how much command output they
-  show inline and shunt the overflow to a file — and ANSI color codes inflate
-  this reference to ~150 KB, far over that cap, so an agent only ever sees a
-  truncated, useless preview. When CLAUDECODE or AI_AGENT is set in the
-  environment, this script auto-paginates: it prints one <=--budget page and
-  tells the agent how to fetch the rest (--page=2 ...) or force the whole dump
-  (--all). A render that already fits the budget prints whole, with no paging
-  noise. In a real terminal (no agent env) nothing changes -- the full output
-  just scrolls and renders in color. Tip: a single selector (e.g.
-  `complementary`) usually fits one page.
+Viewing the output:
+  A bare run ALWAYS prints the whole reference. In a real terminal it scrolls
+  and renders in color; in Claude Code you see all of it by expanding the tool
+  output (Ctrl-O). The "Output too large" notice only limits what loads into an
+  AGENT's context window -- it does not stop a human from seeing the full
+  output. --page=N is therefore strictly opt-in: it exists only so an agent can
+  pull one measured chunk into its own context when it needs to read specific
+  values. It is never required to view the colors. For a focused look, a
+  selector (e.g. `complementary`, `triadic`, `bands`) is the better tool.
 """
 
 import colorsys
 import contextlib
 import io
-import os
 import shutil
 import sys
 
@@ -97,21 +92,17 @@ WIDTH = next((int(a.split("=", 1)[1]) for a in sys.argv
 if WIDTH is None:
     WIDTH = shutil.get_terminal_size((100, 24)).columns
 
-# --- agent-aware output paging ---------------------------------------------
-# Coding agents (Claude Code, etc.) cap inline command output; this full color
-# reference (~150 KB of ANSI codes) blows past that cap, so an agent sees only
-# a truncated preview. Detect an agent host and auto-paginate so each run stays
-# displayable. Real terminals (no agent env) are left completely untouched.
-AGENT = bool(os.environ.get("CLAUDECODE") or os.environ.get("AI_AGENT"))
-if "--paged" in sys.argv:
-    AGENT = True
-if "--no-paged" in sys.argv:
-    AGENT = False
-FORCE_ALL = "--all" in sys.argv
+# --- optional output paging ------------------------------------------------
+# A bare run ALWAYS prints the whole reference: a real terminal scrolls it, and
+# Claude Code shows the full thing when you expand the tool output (Ctrl-O). The
+# "Output too large" notice only limits what loads into an AGENT's context
+# window, not what a human can see. Paging is therefore strictly OPT-IN, for the
+# rare case where an agent wants to pull one measured chunk into its own context.
 BUDGET = next((int(a.split("=", 1)[1]) for a in sys.argv
                if a.startswith("--budget=")), 20000)
 PAGE = next((int(a.split("=", 1)[1]) for a in sys.argv
              if a.startswith("--page=")), 1)
+WANT_PAGE = any(a.startswith("--page=") for a in sys.argv)
 
 # xterm's actual RGB values for cube levels 0..5
 LEVELS = [0, 95, 135, 175, 215, 255]
@@ -411,8 +402,8 @@ def _paginate(text, budget):
     return pages or [""]
 
 
-if FORCE_ALL or not AGENT or len(_output.encode()) <= BUDGET:
-    sys.stdout.write(_output)            # real terminal, or fits the cap: all at once
+if not WANT_PAGE:
+    sys.stdout.write(_output)            # default, every time: the whole thing
 else:
     pages = _paginate(_output, BUDGET)
     k = len(pages)
@@ -420,8 +411,6 @@ else:
     sys.stdout.write(pages[p - 1])
     nxt = p + 1 if p < k else 1
     sys.stdout.write(
-        f"\n  [agent display mode: page {p}/{k} — full render is "
-        f"{len(_output.encode()) // 1024} KB, over the {BUDGET // 1000} KB inline "
-        f"cap. Next: --page={nxt} (through --page={k}); --all forces the whole "
-        f"dump; or pass a selector like `complementary` for one relationship in "
-        f"a single page.]\n")
+        f"\n  [chunk {p}/{k} of a {len(_output.encode()) // 1024} KB render — "
+        f"--page={nxt} for the next chunk, or drop --page to print it all at "
+        f"once.]\n")

@@ -48,7 +48,7 @@ swatches with the codes right there.
 No dependencies beyond Python 3 (uses only the standard library).
 
 ```bash
-python3 terminal_color_spectrums.py [selectors] [--smart] [--width=N] [--page=N | --all]
+python3 terminal_color_spectrums.py [selectors] [--smart] [--width=N] [--page=N]
 ```
 
 With no selectors it renders everything (≈150 KB — pipe it through a pager). For an
@@ -87,21 +87,19 @@ python3 terminal_color_spectrums.py rainbow --smart      # flags compose with se
 |---|---|
 | `--smart` | Print tile numbers in **white** on dark colors (luminance-tested), instead of the default all-black text. Improves legibility of labels on deep navies/maroons. |
 | `--width=N` | Force the band sections to wrap at `N` columns instead of auto-detecting the terminal width. The bands chunk *sheet-music style* — the program controls the line breaks and reprints every row per chunk — so vertically-aligned relationship columns survive any width. |
-| `--page=N` | Print page `N` of the paginated output (agent display mode; see below). |
-| `--all` | Force the entire render in one shot, even under an agent. |
-| `--budget=N` | Per-page byte budget for agent display mode (default `20000`). |
+| `--page=N` | Print only chunk `N` of the output. Opt-in; see below. |
+| `--budget=N` | Byte budget per `--page` chunk (default `20000`). |
 
-## Agent display (Claude Code and friends)
+## Viewing the output
 
-Coding agents cap how much command output they show inline and shunt the overflow
-to a file, and this reference is ~150 KB of ANSI codes, far over that cap, so an
-agent would otherwise see only a truncated preview. When `CLAUDECODE` or `AI_AGENT`
-is set in the environment, the script auto-paginates: it prints one page (sized by
-`--budget`, default 20000 bytes), then tells the agent how to fetch the rest with
-`--page=2`, `--page=3`, and so on, or `--all` to force the whole dump. A render that
-already fits the budget prints whole, with no paging. In a real terminal (no agent
-env var) nothing changes: the full output just scrolls and renders in color. A
-single selector such as `complementary` usually fits one page.
+A bare run prints the whole reference. In a real terminal it scrolls and renders
+in color. Inside a coding agent (Claude Code and friends), the "Output too large"
+notice only limits how much loads into the *agent's* context window; it does not
+stop a human from seeing the output, which stays fully viewable by expanding the
+tool result. `--page=N` is strictly opt-in, for the rare case where an agent wants
+to pull one measured chunk (sized by `--budget`, default 20000 bytes) into its own
+context; it is never required to view the colors. For a focused look, pass a
+selector such as `complementary` or `bands`.
 
 ## The sections
 
