@@ -15,7 +15,12 @@ Renders the xterm-256 palette as color-relationship spectrums for designing term
 python3 ~/.claude/skills/terminal-colors/terminal_color_spectrums.py [selectors] [--smart] [--width=N] [--page=N]
 ```
 
-**Viewing the output:** a bare run prints the *whole* reference. In Claude Code the "Output too large" notice only limits what loads into the assistant's own context window — it does NOT stop June from seeing the full output: she expands the tool result (Ctrl-O) and sees every section in color. Do not tell her the colors "can't display in Claude Code"; they render fine. `--page=N` is strictly opt-in, for when the *agent* needs to pull one measured chunk into its own context. To show June a focused view, run a selector (`complementary`, `triadic`, `bands`) — that prints a small, complete, in-conversation render with no paging.
+**Viewing the output — three SEPARATE limits, do not conflate them:**
+1. **Color rendering works fine** in Claude Code. Never tell June the colors "can't display"; they do.
+2. **Context cap** ("Output too large"): only limits what loads into the *assistant's* context window, not what June sees.
+3. **Per-result display ceiling**: Claude Code paints only so much of ONE oversized tool result, then sends the tail to the saved `.txt` only. So a single bare run (~146KB) shows most-but-not-all on June's screen and cuts off mid-section. This is the one that actually bites.
+
+**Therefore: to let June SEE a large render on screen, emit it as several sub-ceiling tool results, not one monster command.** A selector (`complementary`, `triadic`, `bands`) prints one relationship complete in-pane. `--page=N` walks a big section (especially §9) in pane-sized chunks (`--budget`, default 20000 B): run `... split --page=1`, then `--page=2`, each paints in full. A bare run still prints the whole thing (right for a real terminal or the saved file), but in Claude Code prefer the chunked path so nothing falls off the pane.
 
 Selectors (mix freely, space- or comma-separated): section numbers `1`–`9`, or names — `families`/`fam` (1), `analogous`/`ana` (2 + band rows), `rainbow` (3), `complementary`/`comp` (4 + band rows), `triadic`/`tri` (5 + band rows), `tetradic`/`tetra` (6 + band rows), `split`/`split-comp` (7 + band rows), `bands`/`ring` (8 full), `fullbands`/`full` (9 full). A relationship name pulls its family chart **and** its rows in both band sections — the whole concept, not one section. `--list` prints the table. Examples:
 

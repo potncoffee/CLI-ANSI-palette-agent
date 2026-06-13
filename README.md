@@ -92,14 +92,21 @@ python3 terminal_color_spectrums.py rainbow --smart      # flags compose with se
 
 ## Viewing the output
 
-A bare run prints the whole reference. In a real terminal it scrolls and renders
-in color. Inside a coding agent (Claude Code and friends), the "Output too large"
-notice only limits how much loads into the *agent's* context window; it does not
-stop a human from seeing the output, which stays fully viewable by expanding the
-tool result. `--page=N` is strictly opt-in, for the rare case where an agent wants
-to pull one measured chunk (sized by `--budget`, default 20000 bytes) into its own
-context; it is never required to view the colors. For a focused look, pass a
-selector such as `complementary` or `bands`.
+Three separate limits matter here; do not conflate them:
+
+1. **Color rendering works** in coding agents like Claude Code. The colors display.
+2. **Context cap** ("Output too large") only limits what loads into the *agent's*
+   context window, not what a human sees.
+3. **Per-result display ceiling**: the pane paints only so much of ONE oversized
+   tool result, then the tail goes only to a saved file. A single ~146 KB run shows
+   most-but-not-all on screen and cuts off mid-section.
+
+So to view a large render on screen, emit it as several sub-ceiling pieces rather
+than one giant command. A selector (`complementary`, `triadic`, `bands`) prints one
+relationship complete. `--page=N` walks a big section (especially the full-spectrum
+bands) in pane-sized chunks (`--budget`, default 20000 bytes): run `... split
+--page=1`, then `--page=2`. A bare run still prints everything, which is right for a
+real terminal or the saved file.
 
 ## The sections
 
