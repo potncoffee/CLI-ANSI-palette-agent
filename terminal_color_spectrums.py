@@ -47,6 +47,7 @@ Grays (excluded here): cube diagonal 16/59/102/145/188/231 + ramp 232-255
 
 Usage:
   python3 terminal_color_spectrums.py [selectors] [--smart] [--width=N]
+                                      [--page=N | --all] [--budget=BYTES]
 
 No selectors renders everything. Selectors are section numbers (1-9) and/or
 names, combinable in any mix ("complementary triadic", "1 9", "rainbow comp"):
@@ -65,9 +66,27 @@ names, combinable in any mix ("complementary triadic", "1 9", "rainbow comp"):
 Flags:
   --smart      white tile text on dark colors (default: all black)
   --width=N    chunk bands to N columns (default: terminal width)
+  --page=N     print page N of the paginated output (agent mode; see below)
+  --all        force the entire render in one shot, even under an agent
+  --budget=N   per-page byte budget for agent mode (default 20000)
+
+Agent / Claude Code display:
+  Coding agents (Claude Code and friends) cap how much command output they
+  show inline and shunt the overflow to a file — and ANSI color codes inflate
+  this reference to ~150 KB, far over that cap, so an agent only ever sees a
+  truncated, useless preview. When CLAUDECODE or AI_AGENT is set in the
+  environment, this script auto-paginates: it prints one <=--budget page and
+  tells the agent how to fetch the rest (--page=2 ...) or force the whole dump
+  (--all). A render that already fits the budget prints whole, with no paging
+  noise. In a real terminal (no agent env) nothing changes -- the full output
+  just scrolls and renders in color. Tip: a single selector (e.g.
+  `complementary`) usually fits one page.
 """
 
 import colorsys
+import contextlib
+import io
+import os
 import shutil
 import sys
 
@@ -77,6 +96,22 @@ WIDTH = next((int(a.split("=", 1)[1]) for a in sys.argv
               if a.startswith("--width=")), None)
 if WIDTH is None:
     WIDTH = shutil.get_terminal_size((100, 24)).columns
+
+# --- agent-aware output paging ---------------------------------------------
+# Coding agents (Claude Code, etc.) cap inline command output; this full color
+# reference (~150 KB of ANSI codes) blows past that cap, so an agent sees only
+# a truncated preview. Detect an agent host and auto-paginate so each run stays
+# displayable. Real terminals (no agent env) are left completely untouched.
+AGENT = bool(os.environ.get("CLAUDECODE") or os.environ.get("AI_AGENT"))
+if "--paged" in sys.argv:
+    AGENT = True
+if "--no-paged" in sys.argv:
+    AGENT = False
+FORCE_ALL = "--all" in sys.argv
+BUDGET = next((int(a.split("=", 1)[1]) for a in sys.argv
+               if a.startswith("--budget=")), 20000)
+PAGE = next((int(a.split("=", 1)[1]) for a in sys.argv
+             if a.startswith("--page=")), 1)
 
 # xterm's actual RGB values for cube levels 0..5
 LEVELS = [0, 95, 135, 175, 215, 255]
@@ -341,14 +376,52 @@ if "--list" in sys.argv:
 
 selected, only8, only9 = parse_selectors(sys.argv[1:])
 
-if 1 in selected: sec1_families()
-if 2 in selected: sec2_analogous()
-if 3 in selected: sec3_rainbow()
-if 4 in selected: sec4_complementary()
-if 5 in selected: sec5_triadic()
-if 6 in selected: sec6_tetradic()
-if 7 in selected: sec7_split()
-if 8 in selected: sec8_bands(only8)
-if 9 in selected: sec9_fullbands(only9)
+# Render into a buffer first so we can measure it and page if an agent host
+# would otherwise truncate the output. Capturing (vs. printing live) leaves the
+# bytes identical, so a real terminal sees exactly what it always did.
+_buf = io.StringIO()
+with contextlib.redirect_stdout(_buf):
+    if 1 in selected: sec1_families()
+    if 2 in selected: sec2_analogous()
+    if 3 in selected: sec3_rainbow()
+    if 4 in selected: sec4_complementary()
+    if 5 in selected: sec5_triadic()
+    if 6 in selected: sec6_tetradic()
+    if 7 in selected: sec7_split()
+    if 8 in selected: sec8_bands(only8)
+    if 9 in selected: sec9_fullbands(only9)
+    print()
 
-print()
+_output = _buf.getvalue()
+
+
+def _paginate(text, budget):
+    """Split into pages each <= budget bytes, breaking only between whole
+    lines so a colored row is never cut mid-escape-sequence."""
+    pages, cur, size = [], [], 0
+    for ln in text.splitlines(keepends=True):
+        lb = len(ln.encode())
+        if cur and size + lb > budget:
+            pages.append("".join(cur))
+            cur, size = [], 0
+        cur.append(ln)
+        size += lb
+    if cur:
+        pages.append("".join(cur))
+    return pages or [""]
+
+
+if FORCE_ALL or not AGENT or len(_output.encode()) <= BUDGET:
+    sys.stdout.write(_output)            # real terminal, or fits the cap: all at once
+else:
+    pages = _paginate(_output, BUDGET)
+    k = len(pages)
+    p = min(max(PAGE, 1), k)
+    sys.stdout.write(pages[p - 1])
+    nxt = p + 1 if p < k else 1
+    sys.stdout.write(
+        f"\n  [agent display mode: page {p}/{k} — full render is "
+        f"{len(_output.encode()) // 1024} KB, over the {BUDGET // 1000} KB inline "
+        f"cap. Next: --page={nxt} (through --page={k}); --all forces the whole "
+        f"dump; or pass a selector like `complementary` for one relationship in "
+        f"a single page.]\n")

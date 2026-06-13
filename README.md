@@ -88,6 +88,18 @@ python3 terminal_color_spectrums.py rainbow --smart      # flags compose with se
 | `--smart` | Print tile numbers in **white** on dark colors (luminance-tested), instead of the default all-black text. Improves legibility of labels on deep navies/maroons. |
 | `--width=N` | Force the band sections to wrap at `N` columns instead of auto-detecting the terminal width. The bands chunk *sheet-music style* — the program controls the line breaks and reprints every row per chunk — so vertically-aligned relationship columns survive any width. |
 
+## Agent display (Claude Code and friends)
+
+Coding agents cap how much command output they show inline and shunt the overflow
+to a file, and this reference is ~150 KB of ANSI codes, far over that cap, so an
+agent would otherwise see only a truncated preview. When `CLAUDECODE` or `AI_AGENT`
+is set in the environment, the script auto-paginates: it prints one page (sized by
+`--budget`, default 20000 bytes), then tells the agent how to fetch the rest with
+`--page=2`, `--page=3`, and so on, or `--all` to force the whole dump. A render that
+already fits the budget prints whole, with no paging. In a real terminal (no agent
+env var) nothing changes: the full output just scrolls and renders in color. A
+single selector such as `complementary` usually fits one page.
+
 ## The sections
 
 1. **Hue families** — all 210 chromatic colors binned into 12 families (30° each), each sorted darkest shade → lightest tint.

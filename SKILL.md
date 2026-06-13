@@ -12,10 +12,10 @@ Renders the xterm-256 palette as color-relationship spectrums for designing term
 ## Usage
 
 ```bash
-python3 ~/.claude/skills/terminal-colors/terminal_color_spectrums.py [selectors] [--smart] [--width=N]
+python3 ~/.claude/skills/terminal-colors/terminal_color_spectrums.py [selectors] [--smart] [--width=N] [--page=N | --all]
 ```
 
-No selectors renders everything (~150KB — far exceeds the conversation display limit; chunk via `awk` on section headers or have June run it with the `!` prefix). **Prefer selectors for in-conversation rendering** — a single relationship's output usually fits in one message.
+**Agent-aware output (automatic):** the script detects Claude Code (via `CLAUDECODE`/`AI_AGENT` env vars) and auto-paginates, so each run fits the inline display cap instead of tripping "Output too large." A render that fits prints whole; a big one prints page 1 and tells you to re-run with `--page=2` onward (or `--all` to force the full ~150KB dump). In a real terminal nothing changes. **Still prefer a selector**, since a single relationship fits one page with no paging needed.
 
 Selectors (mix freely, space- or comma-separated): section numbers `1`–`9`, or names — `families`/`fam` (1), `analogous`/`ana` (2 + band rows), `rainbow` (3), `complementary`/`comp` (4 + band rows), `triadic`/`tri` (5 + band rows), `tetradic`/`tetra` (6 + band rows), `split`/`split-comp` (7 + band rows), `bands`/`ring` (8 full), `fullbands`/`full` (9 full). A relationship name pulls its family chart **and** its rows in both band sections — the whole concept, not one section. `--list` prints the table. Examples:
 
