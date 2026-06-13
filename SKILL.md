@@ -49,6 +49,6 @@ Harmony = family-index arithmetic mod 12: complementary +6, triadic +4, tetradic
 
 ## Repo conventions
 
-This skill folder is its own local git repo — commit changes here locally (no remote yet). `github-committed/` holds the curated staging copy destined for eventual GitHub publication: when the working script reaches a publishable state, copy it there and commit. Do not push anywhere until June says to.
+This skill folder is its own local git repo (full working lineage, no remote). The `github-committed/` subfolder is a SEPARATE standalone repo, published publicly at https://github.com/potncoffee/CLI-ANSI-palette-agent with a clean single-lineage history. It auto-syncs to GitHub: a `post-commit` hook pushes every commit, and a global `PostToolUse` hook auto-commits any Claude edit under `github-committed/`. To release a change, edit the working copy here and copy it into `github-committed/`; the push happens automatically.
 
 The original dated artifact lives in the vault at `Garden/Claude Code/terminal-color-spectrums 06.12.26.py`; this folder's copy is the canonical working version per `~/.claude/rules/skills.md`.
