@@ -89,24 +89,32 @@ python3 terminal_color_spectrums.py rainbow --smart      # flags compose with se
 | `--width=N` | Force the band sections to wrap at `N` columns instead of auto-detecting the terminal width. The bands chunk *sheet-music style* — the program controls the line breaks and reprints every row per chunk — so vertically-aligned relationship columns survive any width. |
 | `--page=N` | Print only chunk `N` of the output. Opt-in; see below. |
 | `--budget=N` | Byte budget per `--page` chunk (default `20000`). |
+| `--plan` | Print the exact sub-ceiling command sequence to display the whole reference in an agent pane. |
 
 ## Viewing the output
 
-Three separate limits matter here; do not conflate them:
+To display the whole reference inside a coding agent (Claude Code, etc.), run:
 
-1. **Color rendering works** in coding agents like Claude Code. The colors display.
+```bash
+python3 terminal_color_spectrums.py --plan
+```
+
+It prints a short sequence of commands, each computed (from live section sizes) to
+fit under the agent's per-result display ceiling, so every pane renders complete.
+Run them in order. This is the reliable recipe; use it instead of one giant run.
+
+Three separate limits make this necessary; do not conflate them:
+
+1. **Color rendering works** in coding agents. The colors display.
 2. **Context cap** ("Output too large") only limits what loads into the *agent's*
    context window, not what a human sees.
-3. **Per-result display ceiling**: the pane paints only so much of ONE oversized
-   tool result, then the tail goes only to a saved file. A single ~146 KB run shows
-   most-but-not-all on screen and cuts off mid-section.
+3. **Per-result display ceiling (~30 KB)**: the pane paints only so much of ONE
+   tool result, then the tail goes only to a saved file. A single ~146 KB run cuts
+   off mid-section. That is why the reference must be emitted in sub-ceiling pieces.
 
-So to view a large render on screen, emit it as several sub-ceiling pieces rather
-than one giant command. A selector (`complementary`, `triadic`, `bands`) prints one
-relationship complete. `--page=N` walks a big section (especially the full-spectrum
-bands) in pane-sized chunks (`--budget`, default 20000 bytes): run `... split
---page=1`, then `--page=2`. A bare run still prints everything, which is right for a
-real terminal or the saved file.
+For one relationship, a selector (`complementary`, `triadic`, `bands`) is the quick
+path. A bare run still prints everything, which is right for a real terminal or the
+saved file.
 
 ## The sections
 

@@ -67,6 +67,9 @@ Flags:
   --width=N    chunk bands to N columns (default: terminal width)
   --page=N     print only chunk N of the output (opt-in; see below)
   --budget=N   byte budget per --page chunk (default 20000)
+  --plan       print the exact command sequence to display the WHOLE reference
+               inside a coding agent (one sub-ceiling pane per command); then
+               run those commands in order. The reliable cross-session recipe.
 
 Viewing the output:
   A bare run ALWAYS prints the whole reference. In a real terminal it scrolls
@@ -367,24 +370,6 @@ if "--list" in sys.argv:
 
 selected, only8, only9 = parse_selectors(sys.argv[1:])
 
-# Render into a buffer first so we can measure it and page if an agent host
-# would otherwise truncate the output. Capturing (vs. printing live) leaves the
-# bytes identical, so a real terminal sees exactly what it always did.
-_buf = io.StringIO()
-with contextlib.redirect_stdout(_buf):
-    if 1 in selected: sec1_families()
-    if 2 in selected: sec2_analogous()
-    if 3 in selected: sec3_rainbow()
-    if 4 in selected: sec4_complementary()
-    if 5 in selected: sec5_triadic()
-    if 6 in selected: sec6_tetradic()
-    if 7 in selected: sec7_split()
-    if 8 in selected: sec8_bands(only8)
-    if 9 in selected: sec9_fullbands(only9)
-    print()
-
-_output = _buf.getvalue()
-
 
 def _paginate(text, budget):
     """Split into pages each <= budget bytes, breaking only between whole
@@ -401,6 +386,62 @@ def _paginate(text, budget):
         pages.append("".join(cur))
     return pages or [""]
 
+
+def _render(fn):
+    b = io.StringIO()
+    with contextlib.redirect_stdout(b):
+        fn()
+    return b.getvalue()
+
+
+if "--plan" in sys.argv:
+    # Emit the exact command sequence that displays the WHOLE reference inside a
+    # coding agent (Claude Code, etc.), where any one tool result over ~30 KB is
+    # truncated to a sidecar file. Each printed command renders one sub-ceiling
+    # pane; section 9 (too big alone) is split into --page chunks. Computed live
+    # from real section sizes, so it stays correct even if the script changes.
+    _sections = [
+        ("1", sec1_families), ("2", sec2_analogous), ("3", sec3_rainbow),
+        ("4", sec4_complementary), ("5", sec5_triadic), ("6", sec6_tetradic),
+        ("7", sec7_split), ("8", lambda: sec8_bands(None)),
+        ("9", lambda: sec9_fullbands(None)),
+    ]
+    PLAN_BUDGET = 26000          # safely under the ~30 KB per-result ceiling
+    _cmds, _group, _gb = [], [], 0
+    for _num, _fn in _sections:
+        _out = _render(_fn)
+        _nb = len(_out.encode())
+        if _nb > PLAN_BUDGET:
+            if _group:
+                _cmds.append(" ".join(_group)); _group, _gb = [], 0
+            for _pi in range(1, len(_paginate(_out, BUDGET)) + 1):
+                _cmds.append(f"{_num} --page={_pi}")
+        elif _gb + _nb > PLAN_BUDGET:
+            _cmds.append(" ".join(_group)); _group, _gb = [_num], _nb
+        else:
+            _group.append(_num); _gb += _nb
+    if _group:
+        _cmds.append(" ".join(_group))
+    print("# The full reference is ~146 KB, over a coding agent's ~30 KB")
+    print("# per-result display ceiling. Run these in order; each fits one pane:")
+    for _c in _cmds:
+        print(f"python3 {sys.argv[0]} {_c}")
+    sys.exit(0)
+
+
+_buf = io.StringIO()
+with contextlib.redirect_stdout(_buf):
+    if 1 in selected: sec1_families()
+    if 2 in selected: sec2_analogous()
+    if 3 in selected: sec3_rainbow()
+    if 4 in selected: sec4_complementary()
+    if 5 in selected: sec5_triadic()
+    if 6 in selected: sec6_tetradic()
+    if 7 in selected: sec7_split()
+    if 8 in selected: sec8_bands(only8)
+    if 9 in selected: sec9_fullbands(only9)
+    print()
+_output = _buf.getvalue()
 
 if not WANT_PAGE:
     sys.stdout.write(_output)            # default, every time: the whole thing
