@@ -48,7 +48,7 @@ swatches with the codes right there.
 No dependencies beyond Python 3 (uses only the standard library).
 
 ```bash
-python3 terminal_color_spectrums.py [selectors] [--smart] [--width=N]
+python3 terminal_color_spectrums.py [selectors] [--smart] [--width=N] [--page=N | --all]
 ```
 
 With no selectors it renders everything (≈150 KB — pipe it through a pager). For an
@@ -87,6 +87,9 @@ python3 terminal_color_spectrums.py rainbow --smart      # flags compose with se
 |---|---|
 | `--smart` | Print tile numbers in **white** on dark colors (luminance-tested), instead of the default all-black text. Improves legibility of labels on deep navies/maroons. |
 | `--width=N` | Force the band sections to wrap at `N` columns instead of auto-detecting the terminal width. The bands chunk *sheet-music style* — the program controls the line breaks and reprints every row per chunk — so vertically-aligned relationship columns survive any width. |
+| `--page=N` | Print page `N` of the paginated output (agent display mode; see below). |
+| `--all` | Force the entire render in one shot, even under an agent. |
+| `--budget=N` | Per-page byte budget for agent display mode (default `20000`). |
 
 ## Agent display (Claude Code and friends)
 
